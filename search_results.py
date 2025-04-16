@@ -11,7 +11,7 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-def get_search_results(keyword):
+def get_search_results(keyword: str) -> list:
     logging.info(f"Searching Amazon for keyword: '{keyword}'")
     query = keyword.replace(' ', '+')
     url = f"https://www.amazon.com/s?k={query}"
