@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import logging
 
 HEADERS = {
     "User-Agent": (
@@ -10,21 +11,37 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-def get_search_results(search_term):
-    search_query = search_term.replace(' ', '+')
-    url = f"https://www.amazon.com/s?k={search_query}"
-    response = requests.get(url, headers=HEADERS)
+def get_search_results(keyword: str) -> list:
+    logging.info(f"Searching Amazon for keyword: '{keyword}'")
+    query = keyword.replace(' ', '+')
+    url = f"https://www.amazon.com/s?k={query}"
+    logging.info(f"Constructed URL: {url}")
+
+    try:
+        response = requests.get(url, headers=HEADERS)
+    except requests.RequestException as e:
+        logging.error(f"Request failed: {e}")
+        return []
+
     if response.status_code != 200:
-        print(f"Failed to fetch search results: {response.status_code}")
+        logging.error(f"Failed to fetch search page. Status code: {response.status_code}")
         return []
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    product_urls = []
+    listings = soup.find_all('div', {'data-component-type': 's-search-result'})
+    logging.info(f"Found {len(listings)} search results.")
 
-    for item in soup.find_all('div', {'data-component-type': 's-search-result'}):
-        link_tag = item.find('a', {'class': 'a-link-normal s-no-outline'})
-        if link_tag and 'href' in link_tag.attrs:
-            product_url = "https://www.amazon.com" + link_tag['href']
-            product_urls.append(product_url)
+    results = []
+    for item in listings:
+        try:
+            title_elem = item.h2
+            if title_elem:
+                title = title_elem.text.strip()
+                link = title_elem.a['href']
+                full_url = f"https://www.amazon.com{link}"
+                results.append(full_url)
+                logging.debug(f"Found product: {title} | URL: {full_url}")
+        except Exception as e:
+            logging.warning(f"Failed to parse a result block: {e}")
 
-    return product_urls
+    return results
