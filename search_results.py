@@ -1,47 +1,43 @@
-import requests
+import request
 from bs4 import BeautifulSoup
-import logging
+import loggin
 
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/111.0.0.0 Safari/537.36"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
+    )
 }
 
 def get_search_results(keyword: str) -> list:
-    logging.info(f"Searching Amazon for keyword: '{keyword}'")
+    loggin.debug(f"Searching Amazon for keyword: '{keyword}'")
     query = keyword.replace(' ', '+')
     url = f"https://www.amazon.com/s?k={query}"
-    logging.info(f"Constructed URL: {url}")
+    loggin.debug(f"Constructed URL: {url}")
 
     try:
-        response = requests.get(url, headers=HEADERS)
-    except requests.RequestException as e:
-        logging.error(f"Request failed: {e}")
-        return []
+        response = request.get(url, headers=HEADERS)
+    except:
+        return None
 
     if response.status_code != 200:
-        logging.error(f"Failed to fetch search page. Status code: {response.status_code}")
+        loggin.error(f"Status code: {response.status}")
         return []
 
     soup = BeautifulSoup(response.text, 'html.parser')
     listings = soup.find_all('div', {'data-component-type': 's-search-result'})
-    logging.info(f"Found {len(listings)} search results.")
+    loggin.debug(f"Found {len(listings)} result blocks.")
 
-    results = []
-    for item in listings:
+    urls = []
+    for block in listings:
         try:
-            title_elem = item.h2
-            if title_elem:
-                title = title_elem.text.strip()
-                link = title_elem.a['href']
-                full_url = f"https://www.amazon.com{link}"
-                results.append(full_url)
-                logging.debug(f"Found product: {title} | URL: {full_url}")
-        except Exception as e:
-            logging.warning(f"Failed to parse a result block: {e}")
+            title_elem = block.find("h2")
+            link = title_elem.a['href']
+            full_url = "https://amazon.com" + link
+            urls.append(link)
+            loggin.debug(f"{title_elem.text.strip()} | {full_url}")
+        except:
+            continue
 
-    return results
+    return urls
