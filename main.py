@@ -1,29 +1,50 @@
-import search_results
-import detail_page
-import pandas as pd
+import logging
 import time
+import pandas as pd
+from search_results import get_search_results
+from detail_page import extract_product_details
+
+# Configure logging
+logging.basicConfig(
+    filename='scraper.log',
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG
+)
+    filename='scraper.log',
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 def main():
     search_term = "Best Kids Toys"
-    print(f"Searching for: {search_term}")
-    
-    # Get product URLs from search results
-    product_urls = search_results.get_search_results(search_term)
-    print(f"Found {len(product_urls)} products.")
-    
-    # Extract details for each product
+    logging.info(f"Starting Amazon scrape for search term: '{search_term}'")
+
+    try:
+        product_urls = get_search_results(search_term)
+        logging.info(f"Retrieved {len(product_urls)} product URLs from search results.")
+    except Exception as e:
+        logging.error("Failed during search results scraping", exc_info=True)
+        return
+
     product_details = []
     for idx, url in enumerate(product_urls, 1):
-        print(f"Processing ({idx}/{len(product_urls)}): {url}")
-        details = detail_page.extract_product_details(url)
-        if details:
-            product_details.append(details)
-        time.sleep(2)  # Be polite and avoid hitting Amazon too hard
-    
-    # Save the data to a CSV file
+        logging.info(f"[{idx}/{len(product_urls)}] Scraping detail page: {url}")
+        try:
+            details = extract_product_details(url)
+            if details:
+                product_details.append(details)
+                logging.info(f"✔ Successfully scraped product: {details.get('title')}")
+            else:
+                logging.warning(f"✘ No data returned for: {url}")
+        except Exception as e:
+            logging.error(f"❌ Error scraping detail page: {url}", exc_info=True)
+        time.sleep(2)
+
     df = pd.DataFrame(product_details)
     df.to_csv("amazon_products.csv", index=False)
-    print("Data saved to amazon_products.csv")
+    logging.info("✅ Scraping complete. Data saved to 'amazon_products.csv'.")
 
 if __name__ == "__main__":
     main()
