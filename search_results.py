@@ -35,7 +35,7 @@ def get_search_results(keyword: str) -> list:
             title_elem = block.find("h2")
             link = title_elem.a['href']
             full_url = "https://amazon.com" + link
-            urls.append(link)
+urls.append(full_url)
             loggin.debug(f"{title_elem.text.strip()} | {full_url}")
         except:
             continue
