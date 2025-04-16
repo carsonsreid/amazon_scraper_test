@@ -38,7 +38,7 @@ def extract_product_details(link):
                 "buybox_seller": seller.get_text().strip() if seller else None,
                 "ships_from": ship.get_text().strip() if ship else None
             }
-        except:
+except Exception as e:
             return {
                 "buybox_price": None,
                 "buybox_seller": None,
