@@ -32,7 +32,8 @@ def get_search_results(keyword: str) -> list:
     urls = []
     for block in listings:
         try:
-            title_elem = block.find("h2")
+title_elem = block.find("h2")
+            if title_elem and title_elem.a:
             link = title_elem.a['href']
             full_url = "https://amazon.com" + link
 urls.append(full_url)
