@@ -18,7 +18,9 @@ def get_search_results(keyword: str) -> list:
 
     try:
         response = request.get(url, headers=HEADERS)
-    except:
+except request.exceptions.RequestException as e:
+        loggin.error(f"Request failed: {e}")
+        return None
         return None
 
     if response.status_code != 200:
