@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import logging
 
 HEADERS = {
     "User-Agent": (
@@ -11,43 +12,41 @@ HEADERS = {
 }
 
 def extract_product_details(url):
-    response = requests.get(url, headers=HEADERS)
+    logging.info(f"Fetching product detail page: {url}")
+
+    try:
+        response = requests.get(url, headers=HEADERS)
+    except requests.RequestException as e:
+        logging.error(f"Request to {url} failed: {e}")
+        return None
+
     if response.status_code != 200:
-        print(f"Failed to fetch product page: {response.status_code}")
+        logging.error(f"Failed to load product page. Status: {response.status_code}")
         return None
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    def get_text(selector):
-        element = soup.select_one(selector)
-        return element.get_text(strip=True) if element else None
+    def safe_select(selector):
+        el = soup.select_one(selector)
+        return el.get_text(strip=True) if el else None
 
-    title = get_text("#productTitle")
-    price = get_text(".a-price .a-offscreen")
-    rating = get_text("span[data-asin-review-stars] span.a-icon-alt")
-    review_count = get_text("#acrCustomerReviewText")
-    image_tag = soup.select_one("#imgTagWrapperId img")
-    image_url = image_tag['src'] if image_tag and 'src' in image_tag.attrs else None
-
-    # Extract ASIN from the product details
-    asin = None
-    asin_element = soup.find("th", string="ASIN")
-    if asin_element:
-        asin_td = asin_element.find_next_sibling("td")
-        if asin_td:
-            asin = asin_td.get_text(strip=True)
-
-    description = get_text("#productDescription")
-    availability = get_text("#availability .a-declarative")
-
-    return {
-        "title": title,
-        "price": price,
-        "rating": rating,
-        "review_count": review_count,
-        "image_url": image_url,
-        "asin": asin,
-        "description": description,
-        "availability": availability,
+    product = {
+        "title": safe_select("#productTitle"),
+        "price": safe_select(".a-price .a-offscreen"),
+        "rating": safe_select("span[data-asin-review-stars] span.a-icon-alt"),
+        "review_count": safe_select("#acrCustomerReviewText"),
+        "availability": safe_select("#availability span"),
+        "brand": safe_select("#bylineInfo"),
+        "bullet_points": [
+            li.get_text(strip=True) for li in soup.select("#feature-bullets ul li") if li
+        ],
+        "description": safe_select("#productDescription"),
+        "image_url": (
+            soup.select_one("#imgTagWrapperId img")['src']
+            if soup.select_one("#imgTagWrapperId img") else None
+        ),
         "url": url
     }
+
+    logging.debug(f"Extracted product data: {product}")
+    return product
