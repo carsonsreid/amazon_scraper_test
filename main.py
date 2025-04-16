@@ -9,6 +9,11 @@ logging.basicConfig(
     filename='scraper.log',
     filemode='w',
     format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG
+)
+    filename='scraper.log',
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
