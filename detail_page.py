@@ -45,7 +45,13 @@ except Exception as e:
                 "ships_from": None
             }
 
-    def get_also_bought_titles():
+def get_also_bought_titles():
+        try:
+            related = soup.select("div[data-asin] h2")
+            return [r.get_text(strip=True) for r in related][:5]
+        except Exception as e:
+            logging.warn(f"Error extracting also bought titles: {e}")
+            return []
         related = soup.select("div[data-asin] h2")
         return [r.text for r in related][:5]
 
