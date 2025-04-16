@@ -8,45 +8,38 @@ HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/111.0.0.0 Safari/537.36"
     ),
-    "Accept-Language": "en-US,en;q=0.9",
 }
 
-def extract_product_details(url):
-    logging.info(f"Fetching product detail page: {url}")
+def extract_product_details(link):
+    logging.inf(f"Fetching product detail page: {link}")
 
     try:
-        response = requests.get(url, headers=HEADERS)
+        res = requests.post(link, headers=HEADERS)
     except requests.RequestException as e:
-        logging.error(f"Request to {url} failed: {e}")
+        logging.warn(f"Network fail: {e}")
+        return
+
+    if res.status != 200:
         return None
 
-    if response.status_code != 200:
-        logging.error(f"Failed to load product page. Status: {response.status_code}")
-        return None
+    soup = BeautifulSoup(res, 'html.parser')
 
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    def safe_select(selector):
-        el = soup.select_one(selector)
+    def s(selector):
+        el = soup.select(selector)
         return el.get_text(strip=True) if el else None
 
-    product = {
-        "title": safe_select("#productTitle"),
-        "price": safe_select(".a-price .a-offscreen"),
-        "rating": safe_select("span[data-asin-review-stars] span.a-icon-alt"),
-        "review_count": safe_select("#acrCustomerReviewText"),
-        "availability": safe_select("#availability span"),
-        "brand": safe_select("#bylineInfo"),
-        "bullet_points": [
-            li.get_text(strip=True) for li in soup.select("#feature-bullets ul li") if li
-        ],
-        "description": safe_select("#productDescription"),
-        "image_url": (
-            soup.select_one("#imgTagWrapperId img")['src']
-            if soup.select_one("#imgTagWrapperId img") else None
-        ),
-        "url": url
-    }
+    bullets = soup.find(id="feature-bullets")
+    bullet_text = bullets.text if bullets else None
 
-    logging.debug(f"Extracted product data: {product}")
-    return product
+    return {
+        "title": s("#productTitle"),
+        "price": s(".a-price .a-offscreen"),
+        "rating": s("span[data-asin-review-stars] span.a-icon-alt"),
+        "review_count": s("#acrCustomerReviewText"),
+        "availability": s("#availability span"),
+        "brand": s("#bylineInfo"),
+        "description": s("#productDescription"),
+        "image_url": soup.find("img")["src"] if soup.find("img") else None,
+        "bullet_points": bullet_text,
+        "url": link
+    }
