@@ -51,7 +51,7 @@ def get_also_bought_titles():
             return [r.get_text(strip=True) for r in related][:5]
         except Exception as e:
             logging.warn(f"Error extracting also bought titles: {e}")
-            return []
+# Remove these duplicate lines as they're already handled in the try block above
         related = soup.select("div[data-asin] h2")
         return [r.text for r in related][:5]
 
